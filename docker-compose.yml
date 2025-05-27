@@ -1,29 +1,31 @@
 services:
-    traffic-ros1:
+    ros1:
         build:
             context: .
             dockerfile: .docker_utils/Dockerfile
             args:
                 - ROS_DISTRO=noetic
         image: r-carla:noetic
-        profiles: ros1
         privileged: true
-        container_name: rcarla-traffic_interface-ros1
+        container_name: rcarla-ros1
         network_mode: "host"
-        command: rosrun traffic_interface traffic_interface.py
+        
+        command: tail -f /dev/null
         volumes: 
-            - ./traffic_interface:/opt/ws/src/traffic_interface
-    traffic-ros2:
+            - ./rcarla_bringup:/opt/ws/src/rcarla_bringup
+            - ./drive_interface:/opt/ws/src/drive_interface
+    ros2:
         build:
             context: .
             dockerfile: .docker_utils/Dockerfile
             args:
                 - ROS_DISTRO=foxy
         image: r-carla:foxy
-        profiles: ros2
         privileged: true
-        container_name: rcarla-traffic_interface-ros2
+        container_name: rcarla-ros2
         network_mode: "host"
-        command: traffic_interface
+        ipc: "host"
+        command: tail -f /dev/null
         volumes: 
-            - ./traffic_interface:/opt/ws/src/traffic_interface
+            - ./rcarla_bringup:/opt/ws/src/rcarla_bringup
+    

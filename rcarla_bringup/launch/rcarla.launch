@@ -1,0 +1,12 @@
+<!-- -->
+<launch>      
+  <node pkg="traffic_interface" name="traffic_interface" type="traffic_interface.py" output="screen" required="true">
+    <param name="num_npc" type="int" value="0"/>
+  </node>
+  <node pkg="drive_interface" name="drive_interface" type="drive_interface.py" output="screen" required="true"/>
+  <node pkg="joy" name="joy_node" type="joy_node" output="screen" required="true"/>
+
+
+
+</launch>
+

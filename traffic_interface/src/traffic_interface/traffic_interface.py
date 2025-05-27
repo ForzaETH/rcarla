@@ -1,18 +1,14 @@
 #!/bin/python3
+import random
+import math
+
+import carla
 import ros_compatibility as roscomp
 from ros_compatibility.node import CompatibleNode
-from std_srvs.srv import Trigger
-import random
-import carla
-from geometry_msgs.msg import PoseStamped
-import threading
-import math
-import copy
-import sys
 
 
 class PositionController:
-    def __init__(self, id, wp, vehicle, world, logwarn=print. loginfo=print):
+    def __init__(self, id, wp, vehicle, world, logwarn=print, loginfo=print):
         self.callback_id = None
         self.logwarn = logwarn
         self.loginfo = loginfo
