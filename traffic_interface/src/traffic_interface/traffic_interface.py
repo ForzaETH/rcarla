@@ -1,0 +1,161 @@
+#!/bin/python3
+import ros_compatibility as roscomp
+from ros_compatibility.node import CompatibleNode
+from std_srvs.srv import Trigger
+import random
+import carla
+from geometry_msgs.msg import PoseStamped
+import threading
+import math
+import copy
+import sys
+
+
+class PositionController:
+    def __init__(self, id, wp, vehicle, world, logwarn=print. loginfo=print):
+        self.callback_id = None
+        self.logwarn = logwarn
+        self.loginfo = loginfo
+        self.id = id
+        self.world = world
+        self.vehicle = vehicle
+        self.waypoints = wp
+        self.vel_scaler = random.uniform(0.3, 0.7)
+        self.waypoint_index = random.randint(0, len(self.waypoints) - 1)
+        
+        last_waypoint_index = self.waypoint_index - 1 if self.waypoint_index > 0 else len(self.waypoints) - 1
+        self.current_x = self.waypoints[last_waypoint_index]["x_m"]
+        self.current_y = self.waypoints[last_waypoint_index]["y_m"]
+        self.current_yaw = self.waypoints[last_waypoint_index]["psi_rad"] * 180 / math.pi
+        
+
+    
+    def set_callback_id(self, callback_id):
+        if self.callback_id is not None:
+            self.logwarn(f"Callback ID already set to {self.callback_id}, cannot set to {callback_id}")
+            return
+        self.callback_id = callback_id
+        self.loginfo(f"Callback ID set to {self.callback_id} for vehicle {self.id}")
+
+    def remove_cb(self):
+        if self.callback_id is None:
+            self.logwarn(f"Callback ID is None, cannot remove callback for vehicle {self.id}")
+            return
+        if self.world is None:
+            self.logwarn(f"World is None, cannot remove callback for vehicle {self.id}")
+            return
+        self.world.remove_on_tick(self.callback_id)
+        
+    
+    def update_pose(self, carla_snapshot):
+        dt = carla_snapshot.timestamp.delta_seconds
+        wp_in_range =self.waypoint_index < len(self.waypoints)
+
+        if not wp_in_range or not self.vehicle.is_alive:
+            self.logwarn(f"Vehicle {self.id} is not alive or waypoint index {self.waypoint_index} is out of bounds ({len(self.waypoints)})")
+            self.remove_cb()
+            return
+
+        waypoint = self.waypoints[self.waypoint_index]
+        distance = waypoint["vx_mps"] * dt * self.vel_scaler
+        direction_x = waypoint["x_m"] - self.current_x
+        direction_y = waypoint["y_m"] - self.current_y
+        direction_norm = math.sqrt(direction_x ** 2 + direction_y ** 2)
+        if direction_norm > 0:
+            direction_x /= direction_norm
+            direction_y /= direction_norm
+            self.current_x += direction_x * distance
+            self.current_y += direction_y * distance
+            self.current_yaw = waypoint["psi_rad"] * 180 / math.pi
+        else:
+            self.logwarn(f"Zero direction norm for waypoint index {self.waypoint_index} with coordinates ({waypoint['x_m']}, {waypoint['y_m']})")
+            self.remove_cb()
+
+        self.vehicle.set_transform(carla.Transform(carla.Location(self.current_x, -self.current_y, 0.0), carla.Rotation(0, -self.current_yaw, 0))) 
+            
+        if direction_norm <= distance:
+            if self.waypoint_index == len(self.waypoints) - 1:
+                self.waypoint_index = 0
+            self.waypoint_index += 1
+    
+       
+
+
+class TrafficManager(CompatibleNode):
+    def __init__(self):
+        super(TrafficManager, self).__init__("traffic_interface")
+        
+        self.waypoints = self.load_waypoints()
+        carla_client = carla.Client(
+            host='localhost',
+            port=2000)
+        carla_client.set_timeout(10.0)
+        self.carla_world = carla_client.get_world()
+        self.vehicles = []
+        self.on_tick_ids = []
+        self.remove_old_npc()        
+        num_npc =  self.get_param('num_npc', 2)
+        for num in range(num_npc):
+            self.generate_npc(num)
+
+    def remove_old_npc(self):
+        old_vehicles = self.carla_world.get_actors().filter('vehicle.f1tenth.npc')
+        for vehicle in old_vehicles:
+            self.loginfo(f"Removing old NPC: {vehicle.id}")
+            vehicle.destroy()
+    
+    
+    def load_waypoints(self):
+        return [
+            {"x_m": 0.0, "y_m": 0.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 1.0, "y_m": 0.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 2.0, "y_m": 1.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 3.0, "y_m": 2.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 4.0, "y_m": 3.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 5.0, "y_m": 4.0, "vx_mps": 1.0, "psi_rad": 0.0},
+            {"x_m": 6.0, "y_m": 5.0, "vx_mps": 1.0, "psi_rad": 0.0}
+            
+        ]
+
+    def generate_npc(self, npc_id):
+        npc_bp = self.carla_world.get_blueprint_library().filter("npc")[0]
+        npc_bp.set_attribute('role_name', f"npc_{npc_id}")
+        carla_actor = self.carla_world.spawn_actor(npc_bp, self.get_random_spawn_point())
+        self.loginfo(f"Spawning NPC {npc_id} at {carla_actor.get_transform()}")
+        carla_actor.set_simulate_physics(False)
+        self.vehicles.append(carla_actor)
+        controller = PositionController(npc_id, self.waypoints, carla_actor, self.carla_world, logwarn=self.logwarn, loginfo=self.loginfo)
+        new_id = self.carla_world.on_tick(controller.update_pose)
+        controller.set_callback_id(new_id)
+        self.on_tick_ids.append(new_id)
+        
+
+    def get_random_spawn_point(self):
+        transform = carla.Transform()
+        transform.location.x = random.uniform(-6, 3)
+        transform.location.y = random.uniform(-5, 10)
+        transform.location.z = 0.5  
+        transform.rotation.yaw = 0
+        return transform
+
+    def destroy(self):
+        for vehicle in self.vehicles:
+            if vehicle.is_alive: 
+                vehicle.destroy()
+        for on_tick_id in self.on_tick_ids:
+            self.carla_world.remove_on_tick(on_tick_id)
+        self.loginfo('Traffic Manager destroyed')
+        
+
+def main():
+    roscomp.init("traffic_interface", args=None)
+    executor = roscomp.executors.MultiThreadedExecutor()
+    ti = TrafficManager()
+    executor.add_node(ti)
+    roscomp.on_shutdown(ti.destroy)
+    ti.spin()
+
+
+if __name__ == '__main__':
+    main()
+
