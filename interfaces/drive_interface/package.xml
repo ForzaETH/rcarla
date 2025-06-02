@@ -11,6 +11,7 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>carla_common</exec_depend>
   <exec_depend>carla_msgs</exec_depend>
+  <exec_depend>rcarla_msgs</exec_depend>
   <exec_depend>carla_manual_control</exec_depend>
 
   <exec_depend>ros_compatibility</exec_depend>

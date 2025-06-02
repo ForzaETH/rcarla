@@ -6,12 +6,15 @@ import carla
 import ros_compatibility as roscomp
 from ros_compatibility.node import CompatibleNode
 
+from geometry_msgs.msg import PoseStamped
+
 
 class PositionController:
-    def __init__(self, id, wp, vehicle, world, logwarn=print, loginfo=print):
+    def __init__(self, id, wp, vehicle, world, logwarn=print, loginfo=print, pose_publisher=None):
         self.callback_id = None
         self.logwarn = logwarn
         self.loginfo = loginfo
+        self.pose_publisher = pose_publisher
         self.id = id
         self.world = world
         self.vehicle = vehicle
@@ -41,6 +44,21 @@ class PositionController:
             self.logwarn(f"World is None, cannot remove callback for vehicle {self.id}")
             return
         self.world.remove_on_tick(self.callback_id)
+
+    def publish_pose(self, time_stamp):
+        if self.pose_publisher is None:
+            return
+        msg = PoseStamped()
+        msg.header.stamp = time_stamp
+        msg.header.frame_id = "map"
+        msg.pose.position.x = self.current_x
+        msg.pose.position.y = self.current_y
+        msg.pose.position.z = 0.0
+        msg.pose.orientation.x = 0.0
+        msg.pose.orientation.y = 0.0
+        msg.pose.orientation.z = math.sin(math.radians(self.current_yaw / 2))
+        msg.pose.orientation.w = math.cos(math.radians(self.current_yaw / 2))
+        self.pose_publisher.publish(msg)
         
     
     def update_pose(self, carla_snapshot):
@@ -68,6 +86,7 @@ class PositionController:
             self.remove_cb()
 
         self.vehicle.set_transform(carla.Transform(carla.Location(self.current_x, -self.current_y, 0.0), carla.Rotation(0, -self.current_yaw, 0))) 
+        self.publish_pose(roscomp.ros_timestamp(carla_snapshot.timestamp.elapsed_seconds, from_sec=True))
             
         if direction_norm <= distance:
             if self.waypoint_index == len(self.waypoints) - 1:
@@ -120,7 +139,21 @@ class TrafficManager(CompatibleNode):
         self.loginfo(f"Spawning NPC {npc_id} at {carla_actor.get_transform()}")
         carla_actor.set_simulate_physics(False)
         self.vehicles.append(carla_actor)
-        controller = PositionController(npc_id, self.waypoints, carla_actor, self.carla_world, logwarn=self.logwarn, loginfo=self.loginfo)
+        pose_publisher = self.new_publisher(
+            PoseStamped,
+            f"/npc_{npc_id}/pose",
+            10
+        )
+        controller = PositionController(
+            npc_id, 
+            self.waypoints, 
+            carla_actor, 
+            self.carla_world, 
+            logwarn=self.logwarn, 
+            loginfo=self.loginfo,
+            pose_publisher=pose_publisher
+            )
+        
         new_id = self.carla_world.on_tick(controller.update_pose)
         controller.set_callback_id(new_id)
         self.on_tick_ids.append(new_id)
