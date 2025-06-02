@@ -1,5 +1,6 @@
 env:
-  use_joystick: false
+  use_joystick: true
+  convert_pc_to_scan: true
 
 
 traffic_interface:
@@ -9,6 +10,17 @@ physics_interface:
   vehicle:
     wheelbase: 1.5
     max_speed: 20.0
+
+imu_interface:
+  simulate_imu: false
+  rate: 10
+  from_simulator: true
+  
+odometry_interface:
+  simulate_odom: true
+  from_simulator: true
+  rate: 20
+
 
 drive_interface:
   physics:
@@ -21,3 +33,7 @@ drive_interface:
     delta_viewing_angle: 0.0
     viewing_distance: 10.0
     viewing_height: 5.0
+
+pointcloud_to_laserscan:
+  min_height: -1.0
+  max_height: 1.0

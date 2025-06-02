@@ -5,7 +5,7 @@ find_package(ros_environment REQUIRED)
 
 set(ROS_VERSION $ENV{ROS_VERSION})
 
-set(SERVICE_FILES PhysicsStep.srv PhysicsInit.srv)
+set(SERVICE_FILES PhysicsStep.srv PhysicsInit.srv ImuUpdate.srv OdomUpdate.srv)
 
 # set(MSG_FILES)
 
@@ -13,16 +13,16 @@ if(${ROS_VERSION} EQUAL 1)
   cmake_minimum_required(VERSION 2.8.3)
 
   # Find catkin macros and libraries
-  find_package(catkin REQUIRED COMPONENTS message_generation std_msgs
+  find_package(catkin REQUIRED COMPONENTS message_generation std_msgs geometry_msgs
                                           )
 
   add_service_files(DIRECTORY srv FILES ${SERVICE_FILES})
 
   # add_message_files(DIRECTORY msg FILES ${MSG_FILES})
 
-  generate_messages(DEPENDENCIES std_msgs )
+  generate_messages(DEPENDENCIES std_msgs geometry_msgs )
 
-  catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
+  catkin_package(CATKIN_DEPENDS message_runtime std_msgs geometry_msgs)
 
 elseif(${ROS_VERSION} EQUAL 2)
 
@@ -40,6 +40,7 @@ elseif(${ROS_VERSION} EQUAL 2)
   find_package(ament_cmake REQUIRED)
   find_package(builtin_interfaces REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(geometry_msgs REQUIRED)
   find_package(rosidl_default_generators REQUIRED)
 
   # Apend "msg/" to each file name
@@ -63,6 +64,7 @@ elseif(${ROS_VERSION} EQUAL 2)
     DEPENDENCIES
     builtin_interfaces
     std_msgs
+    geometry_msgs
     ADD_LINTER_TESTS)
 
   ament_export_dependencies(rosidl_default_runtime)

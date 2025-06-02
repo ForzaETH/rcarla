@@ -6,6 +6,7 @@ import os
 def generate_launch_description():
 
     use_joystick = os.environ.get("USE_JOYSTICK", "false").lower() == "true"
+    pc_to_scan = os.environ.get("CONVERT_PC", "false").lower() == "true"
 
     actions = [
         Node(
@@ -27,7 +28,21 @@ def generate_launch_description():
             executable='physics_interface',
             name='physics_interface',
             output='screen',
-        )
+        ),
+        Node(
+            package='sensors_interface',
+            executable='imu',
+            name='imu_interface',
+            output='screen',
+            parameters=["/opt/ws/src/cfg/ros2_config.yaml"],
+        ),
+        Node(
+            package='sensors_interface',
+            executable='odom',
+            name='odometry_interface',
+            output='screen',
+            parameters=["/opt/ws/src/cfg/ros2_config.yaml"],
+        ),
         ]
 
     if use_joystick:
@@ -38,6 +53,17 @@ def generate_launch_description():
             name='joy_node',
             output='screen',
         )
+        )
+    
+    if pc_to_scan:
+        actions.append(
+            Node(
+                package='pointcloud_to_laserscan',
+                executable='pointcloud_to_laserscan_node',
+                name='pointcloud_to_laserscan',
+                output='screen',
+                parameters=["/opt/ws/src/cfg/ros2_config.yaml"],
+            )
         )
 
     return LaunchDescription(actions)
