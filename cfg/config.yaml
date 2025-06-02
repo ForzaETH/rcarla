@@ -1,0 +1,23 @@
+env:
+  use_joystick: false
+
+
+traffic_interface:
+  num_npc: 0
+
+physics_interface:
+  vehicle:
+    wheelbase: 1.5
+    max_speed: 20.0
+
+drive_interface:
+  physics:
+    x_init: 10.0
+    y_init: 1.0
+    vx_init: 0.0
+    yaw_init: 0.0
+  cam:
+    use_follow_cam: true
+    delta_viewing_angle: 0.0
+    viewing_distance: 10.0
+    viewing_height: 5.0

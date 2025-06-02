@@ -12,6 +12,9 @@ RUN apt update && apt install -y \
     ros-${ROS_DISTRO}-joy \
     python3-pip
 
+RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
+
+
 RUN pip install transforms3d
 
     
@@ -21,9 +24,13 @@ RUN git clone https://github.com/carla-simulator/ros-carla-msgs.git src/ros-carl
 RUN /bin/bash -c 'source /opt/ros/$ROS_DISTRO/setup.bash; \
     if [ "$ROS_VERSION" == "2" ]; then colcon build; else catkin_make install; fi'
 
-COPY . src/
+COPY interfaces src/
 
 RUN /bin/bash -c 'source /opt/ros/$ROS_DISTRO/setup.bash; \
     if [ "$ROS_VERSION" == "2" ]; then source install/setup.bash && colcon build; else source devel/setup.bash && catkin_make install; fi'
 
+RUN echo "source /opt/ws/install/setup.bash" >> /root/.bashrc
+RUN echo "source /opt/carla/setup.bash" >> /root/.bashrc
+
 COPY ./.docker_utils/ros_entrypoint.sh /
+COPY ./.docker_utils/parse_ros2_params.py /
