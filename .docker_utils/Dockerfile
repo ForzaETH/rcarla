@@ -10,10 +10,8 @@ RUN rm -rf /opt/carla-ros-bridge
 RUN apt update && apt install -y \
     git \
     ros-${ROS_DISTRO}-joy \
+    ros-${ROS_DISTRO}-pointcloud-to-laserscan \
     python3-pip
-
-RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
-
 
 RUN pip install transforms3d
 

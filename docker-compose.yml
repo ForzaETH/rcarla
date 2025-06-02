@@ -9,11 +9,11 @@ services:
         privileged: true
         container_name: rcarla-ros1
         network_mode: "host"
-        
-        command: tail -f /dev/null
+        tty: true
+        stdin_open: true
+        command: roslaunch rcarla_bringup rcarla.launch
         volumes: 
-            - ./rcarla_bringup:/opt/ws/src/rcarla_bringup
-            - ./drive_interface:/opt/ws/src/drive_interface
+            - ./cfg/config.yaml:/opt/ws/src/cfg/config.yaml
     ros2:
         build:
             context: .
@@ -25,7 +25,7 @@ services:
         container_name: rcarla-ros2
         network_mode: "host"
         ipc: "host"
-        command: tail -f /dev/null
+        command: ros2 launch rcarla_bringup rcarla.launch.py
         volumes: 
-            - ./rcarla_bringup:/opt/ws/src/rcarla_bringup
+            - ./cfg/config.yaml:/opt/ws/src/cfg/config.yaml
     
