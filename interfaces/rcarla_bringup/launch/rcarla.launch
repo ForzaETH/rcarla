@@ -3,9 +3,7 @@
   <arg name="use_joystick" value="$(env USE_JOYSTICK)"/>
   <arg name="convert_pc" value="$(env CONVERT_PC)"/>
 
-  <node pkg="traffic_interface" name="traffic_interface" type="traffic_interface.py" output="screen" required="true">
-    <param name="num_npc" type="int" value="0"/>
-  </node>
+  <node pkg="traffic_interface" name="traffic_interface" type="traffic_interface.py" output="screen" required="true"/>
   <node pkg="drive_interface" name="drive_interface" type="drive_interface.py" output="screen" required="true"/>
   <node pkg="drive_interface" name="physics_interface" type="physics_interface.py" output="screen" required="true"/>
   

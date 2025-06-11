@@ -6,7 +6,7 @@ set(ROS_VERSION $ENV{ROS_VERSION})
 
 if(${ROS_VERSION} EQUAL 1)
 
-  find_package(catkin REQUIRED COMPONENTS rospy std_msgs geometry_msgs sensor_msgs)
+  find_package(catkin REQUIRED COMPONENTS rospy std_msgs geometry_msgs sensor_msgs ackermann_msgs)
 
   catkin_python_setup()
 
@@ -17,8 +17,10 @@ if(${ROS_VERSION} EQUAL 1)
   install(PROGRAMS 
     src/drive_interface/drive_interface.py
     src/drive_interface/physics_interface.py
+    src/drive_interface/dynamics_model.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
+
 
 
 endif()

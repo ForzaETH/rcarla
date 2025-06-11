@@ -1,6 +1,7 @@
 #!/bin/python3
 import random
 import math
+import json
 
 import carla
 import ros_compatibility as roscomp
@@ -26,8 +27,12 @@ class PositionController:
         self.current_x = self.waypoints[last_waypoint_index]["x_m"]
         self.current_y = self.waypoints[last_waypoint_index]["y_m"]
         self.current_yaw = self.waypoints[last_waypoint_index]["psi_rad"] * 180 / math.pi
-        
 
+        rounded_x = round(self.current_x, 2)
+        rounded_y = round(self.current_y, 2)
+        rounded_scale = round(self.vel_scaler, 2)
+        self.loginfo(f"NPC spawned at {rounded_x}, {rounded_y} and velocity scaler {rounded_scale}")
+        self.loginfo(f"NPC spawned at {rounded_x}, {rounded_y} and velocity scaler {rounded_scale}")
     
     def set_callback_id(self, callback_id):
         if self.callback_id is not None:
@@ -99,7 +104,13 @@ class PositionController:
 class TrafficManager(CompatibleNode):
     def __init__(self):
         super(TrafficManager, self).__init__("traffic_interface")
-        
+
+        self.map_name = self.get_param("map_name", "")
+
+        if not self.map_name:
+            self.logwarn("No map name provided, exiting...")
+            return
+
         self.waypoints = self.load_waypoints()
         carla_client = carla.Client(
             host='localhost',
@@ -121,22 +132,22 @@ class TrafficManager(CompatibleNode):
     
     
     def load_waypoints(self):
-        return [
-            {"x_m": 0.0, "y_m": 0.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 1.0, "y_m": 0.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 2.0, "y_m": 1.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 3.0, "y_m": 2.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 4.0, "y_m": 3.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 5.0, "y_m": 4.0, "vx_mps": 1.0, "psi_rad": 0.0},
-            {"x_m": 6.0, "y_m": 5.0, "vx_mps": 1.0, "psi_rad": 0.0}
-            
-        ]
+        ros_version = roscomp.get_ros_version()
+        file_path = f"/opt/ws/src/traffic_interface/maps/{self.map_name}/global_waypoints.json"
+
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        
+        if not data:
+            self.logwarn(f"No waypoints found in {file_path}")
+            return []
+        
+        return data["global_traj_wpnts_iqp"]["wpnts"]
 
     def generate_npc(self, npc_id):
         npc_bp = self.carla_world.get_blueprint_library().filter("npc")[0]
         npc_bp.set_attribute('role_name', f"npc_{npc_id}")
         carla_actor = self.carla_world.spawn_actor(npc_bp, self.get_random_spawn_point())
-        self.loginfo(f"Spawning NPC {npc_id} at {carla_actor.get_transform()}")
         carla_actor.set_simulate_physics(False)
         self.vehicles.append(carla_actor)
         pose_publisher = self.new_publisher(

@@ -11,6 +11,12 @@ from geometry_msgs.msg import Pose, Twist
 from rcarla_msgs.srv import PhysicsInit, PhysicsStep, ImuUpdate, OdomUpdate
 from transforms3d.euler import euler2quat
 
+ROS_VERSION = roscomp.get_ros_version()
+if ROS_VERSION == 1:
+    from dynamics_model import vehicle_dynamics_st_update_pacejka
+elif ROS_VERSION == 2:
+    from drive_interface.dynamics_model import vehicle_dynamics_st_update_pacejka
+
 
 class PhysicsInterface(CompatibleNode):
     def __init__(self):
@@ -19,11 +25,36 @@ class PhysicsInterface(CompatibleNode):
         
         self.wheelbase = self.get_param('vehicle/wheelbase', 1.5)
         self.max_speed = self.get_param('vehicle/max_speed', 30.0)
+        self.max_sv = self.get_param('vehicle/max_steering_velocity', 1.0)
 
-        self.x = 0
-        self.y = 0
-        self.yaw = 0
-        self.vx = 0
+
+        self.state = {
+            "x": 0.0,
+            "y": 0.0,
+            "theta": 0.0,
+            "velocity": 0.0,
+            "steer_angle": 0.0,
+            "angular_velocity": 0.0,
+            "slip_angle": 0.0
+        }
+
+        self.params = {
+            "Bf": self.get_param("tire_params/Bf", 10.0),
+            "Br": self.get_param("tire_params/Br", 10.0),
+            "Cf": self.get_param("tire_params/Cf", 10.0),
+            "Cr": self.get_param("tire_params/Cr", 10.0),
+            "Df": self.get_param("tire_params/Df", 10.0),
+            "Dr": self.get_param("tire_params/Dr", 10.0),
+            "Ef": self.get_param("tire_params/Ef", 10.0),
+            "Er": self.get_param("tire_params/Er", 10.0),
+            "mu":  self.get_param("tire_params/mu", 1.0),
+            "l_f": self.get_param("vehicle/cog_to_front", 1.0),
+            "l_r": self.get_param("vehicle/cog_to_rear", 1.0),
+            "wheelbase": self.wheelbase,
+            "h_cg": self.get_param("vehicle/cog_height", 0.5),
+            "m": self.get_param("vehicle/mass", 1000.0),
+            "I_z": self.get_param("vehicle/moment_of_inertia", 1000.0) 
+        }
 
         try:
             self.imu_client = self.new_client(
@@ -33,6 +64,8 @@ class PhysicsInterface(CompatibleNode):
             )
         except Exception as e:
             self.imu_client = None
+            self.logwarn(f"Failed to create imu client: {e}")
+
 
         try:
             self.odom_client = self.new_client(
@@ -60,44 +93,61 @@ class PhysicsInterface(CompatibleNode):
 
     
     def init_callback(self, req, response=None):
-        self.x = req.x_init
-        self.y = req.y_init
-        self.yaw = req.yaw_init
+        self.state["x"] = req.x_init
+        self.state["y"] = req.y_init
+        self.state["theta"] = req.yaw_init
         response = roscomp.get_service_response(PhysicsInit)
         response.success = True
-        self.loginfo(f"Initializing physics with x: {self.x}, y: {self.y}, yaw: {self.yaw}")
+        self.loginfo(f"Initializing physics with x: {req.x_init}, y: {req.y_init}, yaw: {req.yaw_init}")
         return response
     
-    def step_callback(self, req, response=None):
-        self.physics_step(req.dt, req.desired_acceleration, req.desired_steering)
+    def step_callback(self, req, response=None):  
+        self.state, [ax, ay] = vehicle_dynamics_st_update_pacejka(
+            self.state,
+            req.desired_acceleration,
+            self.get_sv(req.desired_steering),
+            self.params,
+            req.dt
+        )        
+        
+        self.update_imu(ax=ax, ay=ay)
+        self.update_odometry()
+        
         response = roscomp.get_service_response(PhysicsStep)
-        response.x = self.x
-        response.y = self.y
-        response.yaw = self.yaw
+        response.x = self.state["x"]
+        response.y = self.state["y"]
+        response.yaw = self.state["theta"]
         return response
 
 
-    def update_odometry(self, x, y, yaw, vx, yaw_rate):
+    def get_sv(self, desired_steering):
+        steer_diff = desired_steering - self.state["steer_angle"]
+        if abs(steer_diff) < 1e-3:
+            return 0.0
+        else:
+            return self.max_sv if steer_diff > 0 else -self.max_sv 
+
+    def update_odometry(self):
         if self.odom_client is None:
             return
 
         req = roscomp.get_service_request(OdomUpdate)
         pose = Pose()
-        pose.position.x = x
-        pose.position.y = y
+        pose.position.x = self.state["x"]
+        pose.position.y = self.state["y"]
         pose.position.z = 0.0
-        orientation = euler2quat(0.0, 0.0, yaw)
+        orientation = euler2quat(0.0, 0.0, self.state["theta"])
         pose.orientation.x = orientation[0]
         pose.orientation.y = orientation[1]
         pose.orientation.z = orientation[2]
         pose.orientation.w = orientation[3]
         twist = Twist()
-        twist.linear.x = vx
-        twist.linear.y = 0.0
+        twist.linear.x = self.state["velocity"] * math.cos(self.state["slip_angle"])
+        twist.linear.y = self.state["velocity"] * math.sin(self.state["slip_angle"])
         twist.linear.z = 0.0
         twist.angular.x = 0.0
         twist.angular.y = 0.0
-        twist.angular.z = yaw_rate
+        twist.angular.z = self.state["angular_velocity"]
 
         req.pose = pose
         req.twist = twist        
@@ -108,12 +158,11 @@ class PhysicsInterface(CompatibleNode):
         except roscomp.exceptions.ServiceException as e:
             self.logwarn(f"Failed to update odometry: {e}") 
 
-
-    def update_imu(self, ax, ay, yaw_rate, yaw):
+    def update_imu(self, ax, ay):
         if self.imu_client is None:
             return
         
-        orientation = euler2quat(0.0, 0.0, yaw)
+        orientation = euler2quat(0.0, 0.0, self.state["theta"])
         req = roscomp.get_service_request(ImuUpdate)
         req.orientation.x = orientation[0]
         req.orientation.y = orientation[1]
@@ -121,7 +170,7 @@ class PhysicsInterface(CompatibleNode):
         req.orientation.w = orientation[3]
         req.ax = ax
         req.ay = ay
-        req.yaw_rate = yaw_rate
+        req.yaw_rate = self.state["angular_velocity"]
         
         try:
             thread = threading.Thread(target=self._call_service, args=(self.imu_client, req))
@@ -132,37 +181,6 @@ class PhysicsInterface(CompatibleNode):
     def _call_service(self, client, req):
         resp = self.call_service(client, req, spin_until_response_received=False)
         return resp
-
-    def physics_step(self, dt, desired_acceleration, desired_steering):
-        self.x += self.vx * math.cos(self.yaw) * dt
-        self.y += self.vx * math.sin(self.yaw) * dt
-        old_vx = self.vx
-        if desired_acceleration == 0.0:
-            self.vx *= 0.999 # fake friction
-        else:
-            self.vx += desired_acceleration * dt
-        self.vx = max(0.0, self.vx)
-        self.vx = min(self.max_speed, self.vx)
-        yaw_rate = self.vx / self.wheelbase * math.tan(desired_steering)
-        self.yaw += yaw_rate * dt
-        if self.yaw > math.pi:
-            self.yaw -= 2 * math.pi
-        elif self.yaw < -math.pi:
-            self.yaw += 2 * math.pi
-        self.update_imu(
-            ax=(self.vx - old_vx) / dt,
-            ay=0.0,
-            yaw_rate=yaw_rate,
-            yaw=self.yaw
-        )
-
-        self.update_odometry(
-            x=self.x,
-            y=self.y,
-            yaw=self.yaw,
-            vx=self.vx,
-            yaw_rate=yaw_rate
-        )
 
 
     def destroy(self):

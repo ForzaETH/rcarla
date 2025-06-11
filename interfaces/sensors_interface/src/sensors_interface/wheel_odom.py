@@ -81,7 +81,7 @@ class OdomInterface(CompatibleNode):
         else:
             self.destroy_subscription(self.odom_sub)
         self.destroy_publisher(self.odom_pub)
-        self.world.on_tick(self.cb_id.remove)
+        self.world.remove_on_tick(self.cb_id)
         
 
 def main():

@@ -7,14 +7,15 @@ ARG ROS_DISTRO=noetic
 RUN mkdir -p /opt/ws/src
 RUN mv /opt/carla-ros-bridge/src/ros_compatibility /opt/ws/src/ros_compatibility
 RUN rm -rf /opt/carla-ros-bridge
+
 RUN apt update && apt install -y \
     git \
     ros-${ROS_DISTRO}-joy \
     ros-${ROS_DISTRO}-pointcloud-to-laserscan \
+    ros-${ROS_DISTRO}-ackermann-msgs \
     python3-pip
 
 RUN pip install transforms3d
-
     
 WORKDIR /opt/ws
 

@@ -8,6 +8,7 @@ from ros_compatibility.node import CompatibleNode
 from transforms3d.euler import quat2euler, euler2quat
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import Joy
+from ackermann_msgs.msg import AckermannDriveStamped
 
 from rcarla_msgs.srv import PhysicsInit, PhysicsStep
 
@@ -51,13 +52,19 @@ class DriveInterface(CompatibleNode):
             self.joy_cb,
             10
         )   
+
+        self.autonomous_sub = self.new_subscription(
+            AckermannDriveStamped,
+            "/drive",
+            self.autonomous_cb,
+            10
+        )
     
         self.init_client = self.new_client(
             PhysicsInit,
             "/rcarla/physics_interface/init",
             timeout_sec=10.0
         )
-
 
         self.step_client = self.new_client(
             PhysicsStep,
@@ -149,8 +156,14 @@ class DriveInterface(CompatibleNode):
         msg.pose.orientation.y = quat[1]
         msg.pose.orientation.z = quat[2]
         msg.pose.orientation.w = quat[3]
+        
         if self.pose_pub is not None:
             self.pose_pub.publish(msg)
+
+
+    def autonomous_cb(self, msg):
+        self.desired_acceleration = msg.drive.acceleration
+        self.desired_steering = msg.drive.steering_angle
        
     def joy_cb(self, msg):
         if msg.axes[5] == 0.0 and msg.axes[2] == 0.0:

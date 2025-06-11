@@ -166,7 +166,7 @@ class ImuInterface(CompatibleNode):
     def publish_imu(self, time):
         msg = Imu()
         msg.header.stamp = time
-        msg.header.frame_id = "map"
+        msg.header.frame_id = "base_link"
         
         msg.linear_acceleration.x = self.ax
         msg.linear_acceleration.y = self.ay

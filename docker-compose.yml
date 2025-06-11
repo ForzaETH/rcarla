@@ -14,6 +14,7 @@ services:
         command: roslaunch rcarla_bringup rcarla.launch
         volumes: 
             - ./cfg/config.yaml:/opt/ws/src/cfg/config.yaml
+            
     ros2:
         build:
             context: .
