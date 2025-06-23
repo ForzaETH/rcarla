@@ -24,9 +24,9 @@ class PositionController:
         self.waypoint_index = random.randint(0, len(self.waypoints) - 1)
         
         last_waypoint_index = self.waypoint_index - 1 if self.waypoint_index > 0 else len(self.waypoints) - 1
-        self.current_x = self.waypoints[last_waypoint_index]["x_m"]
-        self.current_y = self.waypoints[last_waypoint_index]["y_m"]
-        self.current_yaw = self.waypoints[last_waypoint_index]["psi_rad"] * 180 / math.pi
+        self.current_x = self.waypoints[last_waypoint_index]["x"]
+        self.current_y = self.waypoints[last_waypoint_index]["y"]
+        self.current_yaw = self.waypoints[last_waypoint_index]["psi"] * 180 / math.pi
 
         rounded_x = round(self.current_x, 2)
         rounded_y = round(self.current_y, 2)
@@ -76,16 +76,16 @@ class PositionController:
             return
 
         waypoint = self.waypoints[self.waypoint_index]
-        distance = waypoint["vx_mps"] * dt * self.vel_scaler
-        direction_x = waypoint["x_m"] - self.current_x
-        direction_y = waypoint["y_m"] - self.current_y
+        distance = waypoint["vx"] * dt * self.vel_scaler
+        direction_x = waypoint["x"] - self.current_x
+        direction_y = waypoint["y"] - self.current_y
         direction_norm = math.sqrt(direction_x ** 2 + direction_y ** 2)
         if direction_norm > 0:
             direction_x /= direction_norm
             direction_y /= direction_norm
             self.current_x += direction_x * distance
             self.current_y += direction_y * distance
-            self.current_yaw = waypoint["psi_rad"] * 180 / math.pi
+            self.current_yaw = waypoint["psi"] * 180 / math.pi
         else:
             self.logwarn(f"Zero direction norm for waypoint index {self.waypoint_index} with coordinates ({waypoint['x_m']}, {waypoint['y_m']})")
             self.remove_cb()
@@ -132,9 +132,7 @@ class TrafficManager(CompatibleNode):
     
     
     def load_waypoints(self):
-        ros_version = roscomp.get_ros_version()
         file_path = f"/opt/ws/src/traffic_interface/maps/{self.map_name}/global_waypoints.json"
-
         with open(file_path, 'r') as f:
             data = json.load(f)
         
@@ -142,7 +140,7 @@ class TrafficManager(CompatibleNode):
             self.logwarn(f"No waypoints found in {file_path}")
             return []
         
-        return data["global_traj_wpnts_iqp"]["wpnts"]
+        return data["waypoints"]
 
     def generate_npc(self, npc_id):
         npc_bp = self.carla_world.get_blueprint_library().filter("npc")[0]
@@ -198,4 +196,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
