@@ -132,7 +132,7 @@ class TrafficManager(CompatibleNode):
     
     
     def load_waypoints(self):
-        file_path = f"/opt/ws/src/traffic_interface/maps/{self.map_name}/global_waypoints.json"
+        file_path = f"/opt/ws/src/traffic_interface/maps/{self.map_name}/waypoints.json"
         with open(file_path, 'r') as f:
             data = json.load(f)
         
