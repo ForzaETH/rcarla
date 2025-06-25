@@ -11,7 +11,7 @@ An open-source simulator framework for autonomous racing built upon [CARLA](http
 * High-fidelity Sensor Simulation
 * Digital-Twin Pipeline
 
-For more information please check out our preprint [here](https://arxiv.org/abs/2506.09629) or have a look at this [video]().
+For more information please check out the paper, presented as a poster at the IEEE Intelligent Vehicles Symposium 2025 [here](https://arxiv.org/abs/2506.09629) or have a look at this [video](https://www.youtube.com/watch?v=VFX5kZOaE5Q).
 
 ## Setup
 R-CARLA heavily depends on [CARLA](https://github.com/carla-simulator/carla). Please first install it by following the instructions in the CARLA repository.
