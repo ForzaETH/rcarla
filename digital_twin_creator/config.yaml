@@ -1,0 +1,19 @@
+visualize: true
+num_new_points_z: 10
+
+outlier_removal:
+    number_of_neighbors: 100
+    search_radius: 0.1
+
+statistical_outlier_removal:
+    use_statistical_outlier_removal: false
+    number_of_neighbors: 50
+    std_ratio: 1.0
+
+mesh:
+    generate_mesh: true
+    num_samples: 100000
+
+gpu:
+    force_cpu: true
+    num_iters: 20

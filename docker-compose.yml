@@ -1,0 +1,32 @@
+services:
+    ros1:
+        build:
+            context: .
+            dockerfile: .docker_utils/Dockerfile
+            args:
+                - ROS_DISTRO=noetic
+        image: r-carla:noetic
+        privileged: true
+        container_name: rcarla-ros1
+        network_mode: "host"
+        tty: true
+        stdin_open: true
+        command: roslaunch rcarla_bringup rcarla.launch
+        volumes: 
+            - ./cfg/config.yaml:/opt/ws/src/cfg/config.yaml
+            
+    ros2:
+        build:
+            context: .
+            dockerfile: .docker_utils/Dockerfile
+            args:
+                - ROS_DISTRO=foxy
+        image: r-carla:foxy
+        privileged: true
+        container_name: rcarla-ros2
+        network_mode: "host"
+        ipc: "host"
+        command: ros2 launch rcarla_bringup rcarla.launch.py
+        volumes: 
+            - ./cfg/config.yaml:/opt/ws/src/cfg/config.yaml
+    

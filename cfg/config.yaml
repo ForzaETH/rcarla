@@ -1,0 +1,56 @@
+env:
+  use_joystick: true
+  convert_pc_to_scan: true
+
+
+traffic_interface:
+  num_npc: 2
+  map_name: "f1tenth"
+
+physics_interface:
+  vehicle:
+    wheelbase: 0.307
+    max_speed: 15.0
+    max_steering_velocity: 3.2
+    cog_to_front: 0.174
+    cog_to_rear: 0.151
+    cog_height: 0.23
+    mass: 3.54
+    moment_of_inertia: 0.0627
+  tire_params:
+    Bf: 4.47
+    Br: 9.99
+    Cf: 0.13
+    Cr: 1.5
+    Df: 12.27
+    Dr: 1.32
+    Ef: 1.56
+    Er: 1.1
+    mu: 1.0
+
+
+imu_interface:
+  simulate_imu: true
+  rate: 100
+  from_simulator: true
+  
+odometry_interface:
+  simulate_odom: true
+  from_simulator: true
+  rate: 40
+
+drive_interface:
+  physics:
+    x_init: 0.0
+    y_init: 0.0
+    vx_init: 0.0
+    yaw_init: 0.0
+  cam:
+    use_follow_cam: false
+    delta_viewing_angle: 0.0
+    viewing_distance: 10.0
+    viewing_height: 5.0
+
+pointcloud_to_laserscan:
+  min_height: -1.0
+  max_height: 1.0

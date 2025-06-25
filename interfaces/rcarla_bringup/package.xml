@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rcarla_bringup</name>
+  <version>0.0.1</version>
+  <description>The rcarla main package</description>
+  <maintainer email="maubrunn@ethz.ch">Maurice Brunner</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>drive_interface</exec_depend>
+  <exec_depend>traffic_interface</exec_depend>
+
+
+  <!-- ROS 1 DEPENDENCIES-->
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <build_depend condition="$ROS_VERSION == 1">roslaunch</build_depend>
+
+
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  
+  <export>
+    <build_type condition="$ROS_VERSION == 1">catkin</build_type>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+</package>

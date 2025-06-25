@@ -1,0 +1,19 @@
+<!-- -->
+<launch>      
+  <arg name="use_joystick" value="$(env USE_JOYSTICK)"/>
+  <arg name="convert_pc" value="$(env CONVERT_PC)"/>
+
+  <node pkg="traffic_interface" name="traffic_interface" type="traffic_interface.py" output="screen" required="true"/>
+  <node pkg="drive_interface" name="drive_interface" type="drive_interface.py" output="screen" required="true"/>
+  <node pkg="drive_interface" name="physics_interface" type="physics_interface.py" output="screen" required="true"/>
+  
+  <node pkg="sensors_interface" name="imu_interface" type="imu.py" output="screen" required="true"/>
+  <node pkg="sensors_interface" name="odometry_interface" type="wheel_odom.py" output="screen" required="true"/>
+  
+  <node if="$(eval arg ('use_joystick'))" pkg="joy" name="joy_node" type="joy_node" output="screen" required="true"/>
+  <node if="$(eval arg ('convert_pc'))" pkg="pointcloud_to_laserscan" name="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" output="screen" required="true">
+    <remap from="/cloud_in" to="/carla/ego_vehicle/lidar"/>
+  </node>
+    
+   </launch>
+
