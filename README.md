@@ -1,12 +1,26 @@
 # Racing-CARLA
-An open-source simualtor for autonomous racing built upon [CARLA](https://github.com/carla-simulator/carla).
+<a href="http://arxiv.org/abs/2506.09629">
+    <img src="https://img.shields.io/badge/arXiv.org-2506.09629-b31b1b" alt="arXiv e-print Badge">
+</a>
+
+An open-source simulator framework for autonomous racing built upon [CARLA](https://github.com/carla-simulator/carla). 
+
+## Key Features
+* Interchangeable Vehicle Dynamics Interface
+* Accurate racecar dynamics incorporating tire forces
+* High-fidelity Sensor Simulation
+* Digital-Twin Pipeline
+
+For more information please check out our preprint [here](https://arxiv.org/abs/2506.09629) or have a look at this [video]().
 
 ## Setup
 R-CARLA heavily depends on [CARLA](https://github.com/carla-simulator/carla). Please first install it by following the instructions in the CARLA repository.
 
+### Docker
+You can use R-CARLA natively if you want, however the easier way is to use it with docker. The provided docker image is based on the image of the CARLA [ROS-Bridge](https://github.com/maubrunn/ros-bridge). So you will need to build this first.
 
 ### ROS-Bridge
-R-CARLA interfaces with CARLA through a fork of the [ROS-Bridge](https://github.com/maubrunn/ros-bridge). We use a docker container of the bridge and also use its image as the base image for R-CARLA. But before you build the bridge you need to add the definition of your vehicle to `ros-bridge/carla_spawn_objects/config/objects.json`. 
+If you are planning to use the ros-bridge for spawning vehicles you should add the definition of your vehicle to `ros-bridge/carla_spawn_objects/config/objects.json` before you build the docker image.
 
 ```
 git clone https://github.com/maubrunn/ros-bridge.git -b r-carla
@@ -25,8 +39,7 @@ docker compose build ros1 OR ros2
 ## Usage
 First we need to launch the CARLA server, if you haven't used CARLA before please refer to their documentation for a detailed explanation on how to run CARLA.
 
-We can then start the ros-bridge. It is important that we use CARLA in asynchronous mode because otherwise it can run faster than realtime which can mess up your pipeline:
-
+In our example we will also use the CARLA ros-bridge, however you can also use the CARLA python API directly. It is however important that you set CARLA to asynchronous mode.
 
 ### ROS1 
 
@@ -72,7 +85,7 @@ This launches all interfaces of R-CARLA, they can be configured in `cfg/config.y
 
 
 ### Traffic Interface
-This spawnes multiple NPC's and moves them along a predefined trajectory. The trajectory is taken from the `global_waypoints.json` file in `interfaces/traffic_interface/maps/MAP_NAME`. The file should have the following structure:
+This spawnes multiple NPC's and moves them along a predefined trajectory. The trajectory is taken from the `waypoints.json` file in `interfaces/traffic_interface/maps/MAP_NAME`. The file should have the following structure:
 
 ```json
 {
@@ -103,7 +116,7 @@ The drive interface moves the ego vehicle in CARLA. At the moment a dynamic sing
 Because we bypass the CARLA dynamics the IMU and wheel odom simualtion do not work anymore. R-CARLA adds this simulation in two ways:
 
 Automatic (`from_simulation=False`)
-The position is read from CARLA directly and velocity and acceleration are calculated from the position. This can be very noisy.
+The position is read from CARLA directly and velocity and acceleration are calculated from the position. This is an easy solution if you do not simulate the whole state of your car but can be very noisy. 
 
 Manual (`from_simulation=True`)
 The velocities and accelerations are set by the physics simulator. So if your simulator calculates these values you can add a service call to `/rcarla/sensors_interface/odom_update` and `/rcarla/sensors_interface/imu_update`.
@@ -141,3 +154,19 @@ The `digital_twin_creator/config.yaml` file has some parameters that you can tun
 
 ## Example Usage
 An export of CARLA with a F1TENTH car and two maps will follow.
+
+
+## Citation
+If you use this code in your research, please cite the following paper:
+
+```
+@misc{brunner2025rcarlahighfidelitysensorsimulations,
+      title={R-CARLA: High-Fidelity Sensor Simulations with Interchangeable Dynamics for Autonomous Racing}, 
+      author={Maurice Brunner and Edoardo Ghignone and Nicolas Baumann and Michele Magno},
+      year={2025},
+      eprint={2506.09629},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2506.09629}, 
+}
+```
