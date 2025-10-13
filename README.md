@@ -153,7 +153,7 @@ The `digital_twin_creator/config.yaml` file has some parameters that you can tun
 |gpu/num_iters|If your pointcloud is too big it will fill up the VRAM, for this the filtering is done in batches|
 
 ## Example Usage
-An export of CARLA with a F1TENTH car and two maps will follow.
+An export of CARLA with a F1TENTH car and two maps can be downloaded [here](https://drive.google.com/file/d/1BXT3tLY7kBYESbrhyIZ0ijo8zqJp-n7J/view?usp=drive_link). The maps are called `gokart_map` and `f1tenth`. The car is called `vehicle.f1tenth.nuc`. The 3D asset of the car is taken from [AutoDRIVE](https://autodrive-ecosystem.github.io/).
 
 
 ## Citation
