@@ -155,6 +155,42 @@ The `digital_twin_creator/config.yaml` file has some parameters that you can tun
 ## Example Usage
 An export of CARLA with a F1TENTH car and two maps can be downloaded [here](https://drive.google.com/file/d/1BXT3tLY7kBYESbrhyIZ0ijo8zqJp-n7J/view?usp=drive_link). The maps are called `gokart_map` and `f1tenth`. The car is called `vehicle.f1tenth.nuc`. The 3D asset of the car is taken from [AutoDRIVE](https://autodrive-ecosystem.github.io/).
 
+To use the car add the following json file under: `CARLA_ROS_BRIDGE/carla_spawn_objects/config/objects.json` and rebuild the ros-bridge docker image:
+
+```json
+{   
+    "objects": 
+    [   
+        {
+        "type": "sensor.pseudo.actor_list",
+        "id": "actor_list"
+        },
+        {
+            "type": "vehicle.f1tenth.nuc",
+            "id": "f1tenth",
+            "spawn_point": {"x": 0.0, "y": 0.0, "z": 0.5, "roll": 0.0, "pitch": 0.0, "yaw": 0.0},
+            "sensors": 
+            [
+                {
+                    "type": "sensor.lidar.ray_cast",
+                    "id": "hokuyo",
+                    "spawn_point": {"x": 0.238, "y": 0.0, "z": 0.127, "roll": 0.0, "pitch": 0.0, "yaw": 0.0},
+                    "range": 20,
+                    "channels": 1,
+                    "points_per_second": 43200,
+                    "upper_fov": -1,
+                    "lower_fov": -1,
+                    "rotation_frequency":500, 
+                    "noise_stddev": 0.0,
+                    "sensor_tick": 0.025
+
+                }
+            ]
+        }
+    ]
+}
+```
+
 
 ## Citation
 If you use this code in your research, please cite the following paper:
